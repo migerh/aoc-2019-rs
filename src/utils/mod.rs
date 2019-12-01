@@ -63,7 +63,7 @@ impl std::error::Error for ParseError {
     "Error while parsing input"
   }
 
-  fn cause(&self) -> Option<&std::error::Error> {
+  fn cause(&self) -> Option<&dyn std::error::Error> {
     None
   }
 }
