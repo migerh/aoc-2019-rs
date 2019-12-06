@@ -7,11 +7,12 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 mod utils;
 
 fn run() -> Result<(), utils::Error> {
-  day5::problem1();
-  day5::problem2();
+  day6::problem1();
+  day6::problem2();
 
   if false {
     day1::problem1();
@@ -22,6 +23,8 @@ fn run() -> Result<(), utils::Error> {
     day3::problem2()?;
     day4::problem1();
     day4::problem2();
+    day5::problem1();
+    day5::problem2();
   }
   Ok(())
 }
