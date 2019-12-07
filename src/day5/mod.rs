@@ -1,88 +1,8 @@
-fn isa_interpreter(instructions: &mut Vec<i32>, input: i32) -> i32 {
-  let mut ip = 0;
-  let mut op = instructions[ip];
+use super::intcode::{isa_interpreter};
 
-  let jump_table: Vec<usize> = vec![1, 4, 4, 2, 2, 3, 3, 4, 4];
-  let param_table: Vec<u32> = vec![1, 2, 2, 0, 1, 2, 2, 2, 2];
-  let mut outputs = vec![];
-
-  while op != 99 {
-    let main_op = op % 10;
-    let num_params = param_table[main_op as usize];
-
-    let mut operands = vec![];
-    for i in 0..num_params {
-      let mode = op / 10i32.pow(i + 2) % 10;
-      let param = instructions[ip + i as usize + 1];
-      let operand = if mode == 0 {
-        instructions[param as usize]
-      } else {
-        param
-      };
-      operands.push(operand);
-    }
-    let result_index = instructions[ip + num_params as usize + 1] as usize;
-
-    println!("ip: {}, op: {}, operands: {:?}, r: {}", ip, op, operands, result_index);
-
-    let mut jumped = false;
-    match main_op {
-      1 => {
-        instructions[result_index] = operands[0] + operands[1]
-      },
-      2 => {
-        instructions[result_index] = operands[0] * operands[1]
-      },
-      3 => {
-        instructions[result_index] = input
-      },
-      4 => {
-        println!("Output! {}", operands[0]);
-        outputs.push(operands[0]);
-      },
-      5 => {
-        if operands[0] != 0 {
-          ip = operands[1] as usize;
-          jumped = true;
-        }
-      },
-      6 => {
-        if operands[0] == 0 {
-          ip = operands[1] as usize;
-          jumped = true;
-        }
-      },
-      7 => {
-        instructions[result_index] = if operands[0] < operands[1] {
-          1
-        } else {
-          0
-        };
-      },
-      8 => {
-        instructions[result_index] = if operands[0] == operands[1] {
-          1
-        } else {
-          0
-        };
-      },
-      _ => panic!("At the math disco!")
-    };
-
-    if !jumped {
-      ip += jump_table[main_op as usize];
-    }
-    op = instructions[ip];
-  }
-
-  println!("{:?}", outputs);
-
-  outputs[outputs.len() - 1]
-}
-
-pub fn problem1() -> i32 {
+fn load_code() -> Vec<i32> {
   let input = include_str!("./data/input-1.txt");
-  let mut opcodes = input
+  let opcodes = input
     .split(",")
     .filter(|v| *v != "\n")
     .filter(|v| *v != "")
@@ -90,6 +10,12 @@ pub fn problem1() -> i32 {
       v.parse::<i32>().unwrap()
     })
     .collect::<Vec<_>>();
+
+  opcodes
+}
+
+pub fn problem1() -> i32 {
+  let mut opcodes = load_code();
 
   let result = isa_interpreter(&mut opcodes, 1);
   println!("result: {}", result);
@@ -97,15 +23,7 @@ pub fn problem1() -> i32 {
 }
 
 pub fn problem2() -> i32 {
-  let input = include_str!("./data/input-1.txt");
-  let mut opcodes = input
-    .split(",")
-    .filter(|v| *v != "\n")
-    .filter(|v| *v != "")
-    .map(|v| {
-      v.parse::<i32>().unwrap()
-    })
-    .collect::<Vec<_>>();
+  let mut opcodes = load_code();
 
   let result = isa_interpreter(&mut opcodes, 5);
   println!("result: {}", result);

@@ -1,22 +1,7 @@
-fn isa_interpreter(instructions: &mut Vec<i32>) -> i32 {
-  let mut ip = 0;
-  let mut op = instructions[ip];
-  while op != 99 {
-    let operand1 = instructions[ip + 1] as usize;
-    let operand2 = instructions[ip + 2] as usize;
-    let result = instructions[ip + 3] as usize;
+use super::intcode::isa_interpreter;
 
-    instructions[result] = if op == 1 {
-      instructions[operand1] + instructions[operand2]
-    } else {
-      instructions[operand1] * instructions[operand2]
-    };
-
-    ip += 4;
-    op = instructions[ip];
-  }
-
-  instructions[0]
+fn isa_interpreter_wrap(instructions: &mut Vec<i32>) -> i32 {
+  isa_interpreter(instructions, 0)
 }
 
 fn patch_and_interpret(instructions: &str, noun: i32, verb: i32) -> i32 {
@@ -29,7 +14,7 @@ fn patch_and_interpret(instructions: &str, noun: i32, verb: i32) -> i32 {
   instructions[1] = noun;
   instructions[2] = verb;
 
-  isa_interpreter(&mut instructions)
+  isa_interpreter_wrap(&mut instructions)
 }
 
 fn patch_and_interpret_problem1(instructions: &str) -> i32 {
@@ -42,7 +27,7 @@ fn patch_and_interpret_problem1(instructions: &str) -> i32 {
   instructions[1] = 12;
   instructions[2] = 2;
 
-  isa_interpreter(&mut instructions)
+  isa_interpreter_wrap(&mut instructions)
 }
 
 pub fn problem1() {
