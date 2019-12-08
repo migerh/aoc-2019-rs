@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 fn load_input() -> Vec<i32> {
   include_str!("./data/input-1.txt")
     .split("")
