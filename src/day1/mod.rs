@@ -19,7 +19,7 @@ fn fuel_iterative(mass: i32) -> i32 {
 fn fuel_for_delivery(f: &dyn Fn(i32) -> i32) -> i32 {
   let input = include_str!("./data/input.txt");
   let total_fuel: i32 = input
-    .split("\n")
+    .lines()
     .filter(|v| *v != "")
     .map(|v| v.parse::<i32>().unwrap())
     .map(|m| f(m))

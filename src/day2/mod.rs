@@ -48,7 +48,6 @@ pub fn problem2() {
       }
     }
   }
-  println!("tbd");
 }
 
 #[cfg(test)]

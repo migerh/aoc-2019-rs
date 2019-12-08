@@ -95,6 +95,10 @@ pub fn isa_interpreter_async(instructions: Vec<i32>, input: Receiver<i32>, outpu
     op = instructions[ip];
   }
 
-  outputs[outputs.len() - 1]
+  if outputs.len() > 0 {
+    outputs[outputs.len() - 1]
+  } else {
+    instructions[0]
+  }
 }
 
