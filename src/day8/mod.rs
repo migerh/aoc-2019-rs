@@ -7,39 +7,35 @@ fn load_input() -> Vec<i32> {
     .collect::<Vec<_>>()
 }
 
-pub fn problem1() {
+fn count(slice: &[i32], value: i32) -> usize {
+  slice.iter().filter(|v| **v == value).count()
+}
+
+fn image_stats() -> (usize, usize, usize) {
+  (25, 6, 25 * 6)
+}
+
+pub fn problem1() -> usize {
   let raw_data = load_input();
-  let height = 6;
-  let width = 25;
-  let layer_size = height * width;
+  let (_, _, layer_size) = image_stats();
   let mut layer_stats = vec![];
 
   for layer in raw_data.chunks(layer_size) {
-    let num_of_0 = layer.iter().filter(|v| **v == 0).count();
-    let num_of_1 = layer.iter().filter(|v| **v == 1).count();
-    let num_of_2 = layer.iter().filter(|v| **v == 2).count();
+    let num_of_0 = count(layer, 0);
+    let num_of_1 = count(layer, 1);
+    let num_of_2 = count(layer, 2);
     layer_stats.push((num_of_0, num_of_1, num_of_2));
   }
 
-  let mut smallest_idx = 0;
-  let mut smallest_0 = 200;
-  for (idx, layer) in layer_stats.iter().enumerate() {
-    if smallest_0 > layer.0 {
-      smallest_0 = layer.0;
-      smallest_idx = idx;
-    }
-  }
-
-  println!("smallest num of 0 in layer {}", smallest_idx);
-  let result = layer_stats[smallest_idx].1 * layer_stats[smallest_idx].2;
+  layer_stats.sort_by(|a, b| a.0.cmp(&b.0));
+  let result = layer_stats[0].1 * layer_stats[0].2;
   println!("result: {}", result);
+  result
 }
 
 pub fn problem2() {
   let raw_data = load_input();
-  let width = 25;
-  let height = 6;
-  let layer_size = height * width;
+  let (width, height, layer_size) = image_stats();
 
   let mut map = vec![vec![2; width]; height];
   for layer in raw_data.chunks(layer_size) {
@@ -69,6 +65,6 @@ mod test {
 
   #[test]
   fn problem1_example1() {
-    assert_eq!(1, 1);
+    assert_eq!(problem1(), 1935);
   }
 }
