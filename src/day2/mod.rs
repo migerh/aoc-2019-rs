@@ -1,14 +1,14 @@
 use super::intcode::isa_interpreter;
 
-fn isa_interpreter_wrap(instructions: &mut Vec<i32>) -> i32 {
+fn isa_interpreter_wrap(instructions: &mut Vec<i64>) -> i64 {
   isa_interpreter(instructions, 0)
 }
 
-fn patch_and_interpret(instructions: &str, noun: i32, verb: i32) -> i32 {
+fn patch_and_interpret(instructions: &str, noun: i64, verb: i64) -> i64 {
   let mut instructions = instructions
     .split(",")
     .filter(|v| *v != "")
-    .map(|v| v.parse::<i32>().unwrap())
+    .map(|v| v.parse::<i64>().unwrap())
     .collect::<Vec<_>>();
 
   instructions[1] = noun;
@@ -17,11 +17,11 @@ fn patch_and_interpret(instructions: &str, noun: i32, verb: i32) -> i32 {
   isa_interpreter_wrap(&mut instructions)
 }
 
-fn patch_and_interpret_problem1(instructions: &str) -> i32 {
+fn patch_and_interpret_problem1(instructions: &str) -> i64 {
   let mut instructions = instructions
     .split(",")
     .filter(|v| *v != "")
-    .map(|v| v.parse::<i32>().unwrap())
+    .map(|v| v.parse::<i64>().unwrap())
     .collect::<Vec<_>>();
 
   instructions[1] = 12;
@@ -37,7 +37,7 @@ pub fn problem1() {
 }
 
 pub fn problem2() {
-  let expected_outcome: i32 = 19690720;
+  let expected_outcome: i64 = 19690720;
 
   for n in 0..100 {
     for v in 0..100 {

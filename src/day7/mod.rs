@@ -2,7 +2,7 @@ use std::thread;
 use std::sync::mpsc::channel;
 use super::intcode::{isa_interpreter_mi, isa_interpreter_async};
 
-fn thruster_output(program: &Vec<i32>, phases: &Vec<i32>) -> i32 {
+fn thruster_output(program: &Vec<i64>, phases: &Vec<i64>) -> i64 {
   let mut input = 0;
   for phase in phases {
     let mut code = program.clone();
@@ -12,21 +12,21 @@ fn thruster_output(program: &Vec<i32>, phases: &Vec<i32>) -> i32 {
   input
 }
 
-fn load_input() -> Vec<i32> {
+fn load_input() -> Vec<i64> {
   let input = include_str!("./data/input-1.txt");
   let opcodes = input
     .split(",")
     .filter(|v| *v != "\n")
     .filter(|v| *v != "")
     .map(|v| {
-      v.parse::<i32>().unwrap()
+      v.parse::<i64>().unwrap()
     })
     .collect::<Vec<_>>();
 
   opcodes
 }
 
-pub fn problem1() -> i32 {
+pub fn problem1() -> i64 {
   let opcodes = load_input();
   let mut top = 0;
   for a in 0..5 {
@@ -58,7 +58,7 @@ pub fn problem1() -> i32 {
   top
 }
 
-fn thruster_feedback_loop(program: &Vec<i32>, phases: &Vec<i32>) -> i32 {
+fn thruster_feedback_loop(program: &Vec<i64>, phases: &Vec<i64>) -> i64 {
   let (send_a, recv_a) = channel();
   send_a.send(phases[0]).unwrap();
   send_a.send(0).unwrap();

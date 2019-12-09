@@ -1,20 +1,20 @@
 use super::intcode::{isa_interpreter};
 
-fn load_code() -> Vec<i32> {
+fn load_code() -> Vec<i64> {
   let input = include_str!("./data/input-1.txt");
   let opcodes = input
     .split(",")
     .filter(|v| *v != "\n")
     .filter(|v| *v != "")
     .map(|v| {
-      v.parse::<i32>().unwrap()
+      v.parse::<i64>().unwrap()
     })
     .collect::<Vec<_>>();
 
   opcodes
 }
 
-pub fn problem1() -> i32 {
+pub fn problem1() -> i64 {
   let mut opcodes = load_code();
 
   let result = isa_interpreter(&mut opcodes, 1);
@@ -22,7 +22,7 @@ pub fn problem1() -> i32 {
   result
 }
 
-pub fn problem2() -> i32 {
+pub fn problem2() -> i64 {
   let mut opcodes = load_code();
 
   let result = isa_interpreter(&mut opcodes, 5);

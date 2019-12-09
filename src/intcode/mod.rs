@@ -1,10 +1,10 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-pub fn isa_interpreter(instructions: &mut Vec<i32>, input: i32) -> i32 {
+pub fn isa_interpreter(instructions: &mut Vec<i64>, input: i64) -> i64 {
   isa_interpreter_mi(instructions, &vec![input])
 }
 
-pub fn isa_interpreter_mi(instructions: &mut Vec<i32>, input: &Vec<i32>) -> i32 {
+pub fn isa_interpreter_mi(instructions: &mut Vec<i64>, input: &Vec<i64>) -> i64 {
   let (send, recv) = channel();
   for i in input {
     send.send(*i).unwrap();
@@ -12,19 +12,22 @@ pub fn isa_interpreter_mi(instructions: &mut Vec<i32>, input: &Vec<i32>) -> i32 
   isa_interpreter_mpsc(instructions, recv)
 }
 
-pub fn isa_interpreter_mpsc(instructions: &mut Vec<i32>, input: Receiver<i32>) -> i32 {
+pub fn isa_interpreter_mpsc(instructions: &mut Vec<i64>, input: Receiver<i64>) -> i64 {
   let (send, _recv) = channel();
   isa_interpreter_async(instructions.clone(), input, send)
 }
 
-pub fn isa_interpreter_async(instructions: Vec<i32>, input: Receiver<i32>, output: Sender<i32>) -> i32 {
+pub fn isa_interpreter_async(instructions: Vec<i64>, input: Receiver<i64>, output: Sender<i64>) -> i64 {
   let mut ip = 0;
   let mut instructions = instructions.clone();
+  // reserve 4MB for the intcode program
+  instructions.resize(524288, 0);
   let mut op = instructions[ip];
 
-  let jump_table: Vec<usize> = vec![1, 4, 4, 2, 2, 3, 3, 4, 4];
-  let param_table: Vec<u32> = vec![1, 2, 2, 0, 1, 2, 2, 2, 2];
+  let jump_table: Vec<usize> = vec![1, 4, 4, 2, 2, 3, 3, 4, 4, 2];
+  let param_table: Vec<u32> = vec![1, 2, 2, 0, 1, 2, 2, 2, 2, 1];
   let mut outputs = vec![];
+  let mut relative_base = 0;
 
   while op != 99 {
     let main_op = op % 10;
@@ -32,16 +35,24 @@ pub fn isa_interpreter_async(instructions: Vec<i32>, input: Receiver<i32>, outpu
 
     let mut operands = vec![];
     for i in 0..num_params {
-      let mode = op / 10i32.pow(i + 2) % 10;
+      let mode = op / 10i64.pow(i + 2) % 10;
       let param = instructions[ip + i as usize + 1];
       let operand = if mode == 0 {
         instructions[param as usize]
-      } else {
+      } else if mode == 1 {
         param
+      } else if mode == 2 {
+        instructions[(relative_base + param) as usize]
+      } else {
+        panic!("Unknown param mode: {}", mode);
       };
       operands.push(operand);
     }
-    let result_index = instructions[ip + num_params as usize + 1] as usize;
+    let result_index = if (op / 10i64.pow(num_params + 2)) % 10 == 2 {
+      (relative_base as isize + instructions[ip + num_params as usize + 1] as isize) as usize
+    } else {
+      instructions[ip + num_params as usize + 1] as usize
+    };
 
     let mut jumped = false;
     match main_op {
@@ -52,7 +63,8 @@ pub fn isa_interpreter_async(instructions: Vec<i32>, input: Receiver<i32>, outpu
         instructions[result_index] = operands[0] * operands[1]
       },
       3 => {
-        instructions[result_index] = input.recv().expect("recv inside")
+        let value = input.recv().unwrap();
+        instructions[result_index] = value;
       },
       4 => {
         if let Err(_) = output.send(operands[0]) {
@@ -86,6 +98,9 @@ pub fn isa_interpreter_async(instructions: Vec<i32>, input: Receiver<i32>, outpu
           0
         };
       },
+      9 => {
+        relative_base += operands[0];
+      }
       _ => panic!("At the math disco!")
     };
 
@@ -95,6 +110,8 @@ pub fn isa_interpreter_async(instructions: Vec<i32>, input: Receiver<i32>, outpu
     op = instructions[ip];
   }
 
+  println!("outputs: {:?}", outputs);
+
   if outputs.len() > 0 {
     outputs[outputs.len() - 1]
   } else {
@@ -102,3 +119,12 @@ pub fn isa_interpreter_async(instructions: Vec<i32>, input: Receiver<i32>, outpu
   }
 }
 
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[test]
+  fn verify_203_works() {
+    assert_eq!(isa_interpreter(&mut vec![109, 3, 203, 4, 4, 7, 99, 0], 1), 1);
+  }
+}
