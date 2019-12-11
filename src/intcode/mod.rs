@@ -1,5 +1,13 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
+pub fn parse_instructions(input: &str) -> Vec<i64> {
+  input.split(",")
+    .filter(|v| *v != "\n")
+    .filter(|v| *v != "")
+    .map(|v| v.parse::<i64>().unwrap())
+    .collect::<Vec<_>>()
+}
+
 pub fn isa_interpreter(instructions: &mut Vec<i64>, input: i64) -> i64 {
   isa_interpreter_mi(instructions, &vec![input])
 }
@@ -110,7 +118,7 @@ pub fn isa_interpreter_async(instructions: Vec<i64>, input: Receiver<i64>, outpu
     op = instructions[ip];
   }
 
-  println!("outputs: {:?}", outputs);
+  // println!("outputs: {:?}", outputs);
 
   if outputs.len() > 0 {
     outputs[outputs.len() - 1]
