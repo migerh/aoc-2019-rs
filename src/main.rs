@@ -4,6 +4,7 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
+extern crate num;
 
 mod intcode;
 mod day1;
@@ -17,11 +18,12 @@ mod day8;
 mod day9;
 mod day10;
 mod day11;
+mod day12;
 mod utils;
 
 fn run() -> Result<(), utils::Error> {
-  day11::problem1();
-  day11::problem2();
+  day12::problem1()?;
+  day12::problem2()?;
 
   if false {
     day1::problem1();
@@ -44,6 +46,8 @@ fn run() -> Result<(), utils::Error> {
     day9::problem2();
     day10::problem1();
     day10::problem2();
+    day11::problem1();
+    day11::problem2();
   }
   Ok(())
 }
