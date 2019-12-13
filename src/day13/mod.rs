@@ -97,7 +97,7 @@ fn send_command(send: &Sender<i64>, dx: i64) {
 
 fn play(recv: Receiver<i64>, send: Sender<i64>) -> (HashMap<Coords, u8>, i64) {
   let mut map = HashMap::new();
-  let mut ball = (0, 0);
+  let mut ball;
   let mut paddle = (0, 0);
   let mut paddle_initialized = false;
   let mut highscore = 0;
@@ -129,7 +129,6 @@ fn play(recv: Receiver<i64>, send: Sender<i64>) -> (HashMap<Coords, u8>, i64) {
     if tile == 3 {
       paddle_initialized = true;
       paddle = (x, y);
-      dx = -(paddle.0 - ball.0).signum();
     }
 
     if tile == 99 {

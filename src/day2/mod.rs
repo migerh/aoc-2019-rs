@@ -52,8 +52,6 @@ pub fn problem2() {
 
 #[cfg(test)]
 mod test {
-  use super::*;
-
   #[test]
   fn problem1_example1() {
     // assert_eq!(patch_and_interpret_problem1("1,9,10,3,2,3,11,0,99,30,40,50"), 3500);

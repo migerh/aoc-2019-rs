@@ -121,8 +121,6 @@ pub fn problem2() {
 
 #[cfg(test)]
 mod test {
-  use super::*;
-
   #[test]
   fn problem1_example1() {
 

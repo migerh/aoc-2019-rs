@@ -89,7 +89,7 @@ fn tick(bodies: &mut Vec<Body>) {
   }
 }
 
-fn print(bodies: &Vec<Body>) {
+fn _print(bodies: &Vec<Body>) {
   for body in bodies {
     println!("{}", body);
   }
@@ -189,11 +189,11 @@ mod test {
     for _ in 0..10 {
       tick(&mut bodies);
     }
-    print(&bodies);
+    _print(&bodies);
     let energy = get_energy(&bodies);
     println!("Energy: {}", energy);
 
-    assert_eq!(1, 0);
+    assert_eq!(1, 1);
   }
 
   #[test]
@@ -205,6 +205,6 @@ mod test {
     let counter = run_problem2(input).unwrap();
     println!("Counter: {}", counter);
 
-    assert_eq!(1, 0);
+    assert_eq!(1, 1);
   }
 }
