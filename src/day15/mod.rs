@@ -312,7 +312,48 @@ fn get_neighbors(pos: &Coords, map: &HashMap<Coords, Tile>) -> Vec<(Coords, i64)
   result
 }
 
-pub fn problem1() {
+fn has_vacuum(map: &HashMap<Coords, Tile>) -> bool {
+  for (_, v) in map.iter() {
+    if *v == Tile::Floor {
+      return true;
+    }
+  }
+
+  false
+}
+
+fn find_oxygen(map: &HashMap<Coords, Tile>) -> Vec<Coords> {
+  let mut oxygen = vec![];
+  for (k, v) in map.iter() {
+    if *v == Tile::Oxygen {
+      oxygen.push(k.clone());
+    }
+  }
+
+  oxygen
+}
+
+fn fill_with_oxygen(map: &mut HashMap<Coords, Tile>) -> usize {
+  let mut timer = 0;
+  while has_vacuum(&map) {
+    timer += 1;
+    let oxygen = find_oxygen(&map);
+    for c in oxygen {
+      for neighbor in Neighbors::iter(c) {
+        if let Some(entry) = map.get(&neighbor.0) {
+          if *entry == Tile::Floor {
+            *map.entry(neighbor.0).or_insert(Tile::Oxygen) = Tile::Oxygen;
+          }
+        }
+      }
+    }
+    print_map(&map, &(0, 0));
+  }
+
+  timer
+}
+
+pub fn problems() {
   let input = include_str!("./data/input-1.txt");
   let instructions = parse_instructions(input);
 
@@ -323,7 +364,7 @@ pub fn problem1() {
     std::thread::spawn(move || isa_interpreter_async(instructions, isa_recv, robo_send));
   let robo_thread = std::thread::spawn(move || robot_brain(isa_send, robo_recv));
 
-  let map = robo_thread.join().unwrap();
+  let mut map = robo_thread.join().unwrap();
   let isa_result = isa_thread.join();
   if let Err(_) = isa_result {
     println!("ISA thread closed with err.");
@@ -341,9 +382,10 @@ pub fn problem1() {
   println!("Result 15-1: {}", result.unwrap().1);
 
   print_map(&map, &(0, 0));
-}
 
-pub fn problem2() {}
+  let result2 = fill_with_oxygen(&mut map);
+  println!("Result 15-2: {}", result2);
+}
 
 #[cfg(test)]
 mod test {
