@@ -71,8 +71,13 @@ pub fn isa_interpreter_async(instructions: Vec<i64>, input: Receiver<i64>, outpu
         instructions[result_index] = operands[0] * operands[1]
       },
       3 => {
-        let value = input.recv().unwrap();
-        instructions[result_index] = value;
+        let value = input.recv();
+        if let Ok(value) = value {
+          instructions[result_index] = value;
+        } else if let Err(err) = value {
+          println!("Error while reading value: {}", err);
+          break;
+        }
       },
       4 => {
         if let Err(_) = output.send(operands[0]) {

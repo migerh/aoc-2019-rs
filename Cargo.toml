@@ -15,3 +15,5 @@ opt-level = 3      # controls the `--opt-level` the compiler builds with.
 regex = "1"
 lazy_static = "1.2"
 num = "0.2.0"
+rand = "0.7.2"
+pathfinding = "2.0.1"
