@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::cell::RefCell;
-use std::cmp::max;
 use super::utils::ParseError;
 
 #[derive(Debug)]
@@ -37,30 +36,6 @@ struct Reaction<'a> {
 impl<'a> Reaction<'a> {
   fn new((input, output): (Vec<Reagent<'a>>, Reagent<'a>)) -> Reaction<'a> {
     Reaction { input, output }
-  }
-
-  fn has_ore_input(&self) -> bool {
-    for reagent in &self.input {
-      if reagent.what == "ORE" {
-        return true;
-      }
-    }
-
-    false
-  }
-
-  fn amount_of_ore_input(&self) -> u32 {
-    if !self.has_ore_input() {
-      return 0;
-    }
-
-    for reagent in &self.input {
-      if reagent.what == "ORE" {
-        return reagent.amount;
-      }
-    }
-
-    0
   }
 }
 
@@ -108,29 +83,6 @@ impl<'a> Lab<'a> {
     }
 
     result
-  }
-
-  fn optimize_backlog(backlog: VecDeque<(&str, u32)>) -> VecDeque<(&str, u32)> {
-    let mut items_in_backlog: Vec<&str> = Vec::new();
-    let mut optimized = VecDeque::new();
-
-    for item in backlog.iter() {
-      if !items_in_backlog.contains(&item.0) {
-        items_in_backlog.push(item.0);
-      }
-    }
-
-    for item in items_in_backlog.iter() {
-      let mut sum = 0;
-      for backlog_item in backlog.iter() {
-        if *item == backlog_item.0 {
-          sum += backlog_item.1;
-        }
-      }
-      optimized.push_back((*item, sum));
-    }
-
-    optimized
   }
 
   fn produce(&'a self, what: &'a str, amount: u32) {
@@ -183,76 +135,7 @@ impl<'a> Lab<'a> {
       }
 
       println!("Backlog: {:?}", backlog);
-      // backlog = Lab::optimize_backlog(backlog);
-      // println!("Backlog (optimized): {:?}", backlog);
     }
-  }
-
-  fn produce_recursive(&'a self, what: &'a str, amount: u32) {
-    if what == "ORE" {
-      *self.used_materials.borrow_mut().entry("ORE").or_insert(0) += amount;
-      return;
-    }
-
-    let relevant_reactions = self.find_reactions_with_output(what);
-
-    if relevant_reactions.is_empty() {
-      panic!("Don't know how to produce {}", what);
-    }
-
-    if relevant_reactions.len() > 1 {
-      panic!("Too many reactions ({}) to produce {}", relevant_reactions.len(), what);
-    }
-
-    let reactions = self.reactions.borrow();
-    let reaction = reactions.get(relevant_reactions[0]).unwrap();
-    let oa = reaction.output.amount;
-    let factor = (amount + (oa - 1)) / oa;
-    let excess = oa * factor - amount;
-    println!("Used {} {}", amount, what);
-    *self.used_materials.borrow_mut().entry(what).or_insert(0) += amount;
-    println!("Shelving {} {}", excess, what);
-    *self.shelf.borrow_mut().entry(what).or_insert(0) += excess;
-
-    for reagent in &reaction.input {
-      let mut amount_to_produce = factor * reagent.amount;
-      if let Some(shelved) = self.shelf.borrow_mut().get_mut(reagent.what) {
-        while *shelved > reagent.amount {
-          println!("Reusing {} units of shelved {}", reagent.amount, reagent.what);
-          *shelved -= reagent.amount;
-          amount_to_produce -= reagent.amount;
-        }
-      }
-
-      println!("Producing {} {}", reagent.amount * factor, reagent.what);
-      self.produce(reagent.what, amount_to_produce);
-    }
-  }
-
-  fn optimize(&self) {
-    for (key, value) in self.shelf.borrow_mut().iter() {
-      let reactions = self.reactions.borrow();
-      let relevant_reaction = reactions.get(self.find_reactions_with_output(*key)[0]).unwrap();
-      let oa = relevant_reaction.output.amount;
-      if relevant_reaction.has_ore_input() && oa < *value {
-        let factor = *value / oa;
-        let ore_input = relevant_reaction.amount_of_ore_input();
-        *self.used_materials.borrow_mut().get_mut("ORE").unwrap() -= factor * ore_input;
-      }
-    }
-  }
-
-  fn get_produced(&self) -> HashMap<&str, u32> {
-    let mut map = HashMap::new();
-
-    for reagent in self.reactions.borrow().iter() {
-      let what = reagent.output.what;
-      let entry = map.entry(what).or_insert(0);
-      *entry += self.used_materials.borrow().get(what).unwrap();
-      *entry += self.shelf.borrow().get(what).unwrap();
-    }
-
-    map
   }
 }
 

@@ -1,6 +1,6 @@
 #![feature(vec_remove_item)]
 #![feature(optimize_attribute)]
-// #![allow(dead_code)]
+#![allow(dead_code)]
 
 #[macro_use]
 extern crate lazy_static;
