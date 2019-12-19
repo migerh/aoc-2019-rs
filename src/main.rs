@@ -25,14 +25,19 @@ mod day14;
 mod day15;
 mod day16;
 mod day17;
+mod day18;
+mod day19;
 mod utils;
 
 fn run() -> Result<(), utils::Error> {
   // day14::problem1()?;
   // day14::problem2()?;
 
-  day17::problem1();
-  day17::problem2();
+  // day18::problem1();
+  // day18::problem2();
+
+  day19::problem1();
+  day19::problem2();
 
   if false {
     day1::problem1();
@@ -68,6 +73,10 @@ fn run() -> Result<(), utils::Error> {
     day16::problem2();
     day17::problem1();
     day17::problem2();
+    day18::problem1();
+    day18::problem2();
+    day19::problem1();
+    day19::problem2();
   }
   Ok(())
 }
