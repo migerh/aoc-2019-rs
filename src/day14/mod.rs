@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::cell::RefCell;
+use std::cmp::max;
 use super::utils::ParseError;
 
 #[derive(Debug)]
@@ -109,7 +110,85 @@ impl<'a> Lab<'a> {
     result
   }
 
+  fn optimize_backlog(backlog: VecDeque<(&str, u32)>) -> VecDeque<(&str, u32)> {
+    let mut items_in_backlog: Vec<&str> = Vec::new();
+    let mut optimized = VecDeque::new();
+
+    for item in backlog.iter() {
+      if !items_in_backlog.contains(&item.0) {
+        items_in_backlog.push(item.0);
+      }
+    }
+
+    for item in items_in_backlog.iter() {
+      let mut sum = 0;
+      for backlog_item in backlog.iter() {
+        if *item == backlog_item.0 {
+          sum += backlog_item.1;
+        }
+      }
+      optimized.push_back((*item, sum));
+    }
+
+    optimized
+  }
+
   fn produce(&'a self, what: &'a str, amount: u32) {
+    let mut backlog = VecDeque::new();
+    backlog.push_back((what, amount));
+
+    while let Some(next) = backlog.pop_front() {
+      let (next_what, next_amount) = next;
+      if next_what == "ORE" {
+        *self.used_materials.borrow_mut().entry("ORE").or_insert(0) += next_amount;
+        continue;
+      }
+
+      let relevant_reactions = self.find_reactions_with_output(next_what);
+
+      if relevant_reactions.is_empty() {
+        panic!("Don't know how to produce {}", next_what);
+      }
+
+      if relevant_reactions.len() > 1 {
+        panic!("Too many reactions ({}) to produce {}", relevant_reactions.len(), next_what);
+      }
+
+
+      let reactions = self.reactions.borrow();
+      let reaction = reactions.get(relevant_reactions[0]).unwrap();
+      let oa = reaction.output.amount;
+
+      let excess = if let Some(shelved) = self.shelf.borrow().get(next_what) {
+        *shelved
+      } else {
+        0
+      };
+
+      if excess > next_amount {
+        *self.shelf.borrow_mut().entry(next_what).or_insert(0) = excess - next_amount;
+        continue;
+      }
+      let factor = (next_amount - excess + (oa - 1)) / oa;
+
+      let excess = oa * factor - (next_amount - excess);
+      println!("Used {} {}", next_amount, next_what);
+      *self.used_materials.borrow_mut().entry(next_what).or_insert(0) += next_amount;
+      println!("Shelving {} {}", excess, next_what);
+      *self.shelf.borrow_mut().entry(next_what).or_insert(0) = excess;
+
+      for reagent in &reaction.input {
+        println!("Producing {} {}", reagent.amount * factor, reagent.what);
+        backlog.push_back((reagent.what, factor * reagent.amount));
+      }
+
+      println!("Backlog: {:?}", backlog);
+      // backlog = Lab::optimize_backlog(backlog);
+      // println!("Backlog (optimized): {:?}", backlog);
+    }
+  }
+
+  fn produce_recursive(&'a self, what: &'a str, amount: u32) {
     if what == "ORE" {
       *self.used_materials.borrow_mut().entry("ORE").or_insert(0) += amount;
       return;
@@ -136,16 +215,17 @@ impl<'a> Lab<'a> {
     *self.shelf.borrow_mut().entry(what).or_insert(0) += excess;
 
     for reagent in &reaction.input {
+      let mut amount_to_produce = factor * reagent.amount;
       if let Some(shelved) = self.shelf.borrow_mut().get_mut(reagent.what) {
-        if *shelved > factor * reagent.amount {
-          println!("Reusing {} units of shelved {}", factor * reagent.amount, reagent.what);
-          *shelved -= factor * reagent.amount;
-          continue;
+        while *shelved > reagent.amount {
+          println!("Reusing {} units of shelved {}", reagent.amount, reagent.what);
+          *shelved -= reagent.amount;
+          amount_to_produce -= reagent.amount;
         }
       }
 
       println!("Producing {} {}", reagent.amount * factor, reagent.what);
-      self.produce(reagent.what, factor * reagent.amount);
+      self.produce(reagent.what, amount_to_produce);
     }
   }
 
@@ -178,9 +258,9 @@ impl<'a> Lab<'a> {
 
 pub fn problem1() -> Result<u32, ParseError> {
   let input = include_str!("./data/input-1.txt");
+  // let input = include_str!("./data/example-4.txt");
   let lab = Lab::parse(&input)?;
 
-  println!("reactions: {:?}", lab);
   lab.produce("FUEL", 1);
   if let Some(result) = lab.used_materials.borrow().get("ORE") {
     println!("Amount of ORE used for 1 FUEL: {}", result);
@@ -188,28 +268,6 @@ pub fn problem1() -> Result<u32, ParseError> {
   }
 
   Err(ParseError::new("Could not find ORE"))
-
-  // let fuel_reactions = find_fuel_reactions(&reactions);
-  // println!("Fuel reactions ({:?})", fuel_reactions);
-
-  // for index in fuel_reactions {
-  //   println!("reactions {:?}", reactions[index]);
-  // }
-
-  // let mut map = HashMap::new();
-  // for (index, reaction) in reactions.iter().enumerate() {
-  //   map.entry(reaction.output.what)
-  //     .or_insert(vec![]).push(index);
-  // }
-
-  // println!("Multiplicity check");
-  // for (key, value) in map.iter() {
-  //   if value.len() > 1 {
-  //     println!("More than one reaction to create {}", key);
-  //   }
-  // }
-
-  // println!("{:?}", map);
 }
 
 pub fn problem2() -> Result<(), ParseError> {
@@ -230,7 +288,6 @@ mod test {
 7 A, 1 E => 1 FUEL";
     let lab = Lab::parse(&input)?;
     lab.produce("FUEL", 1);
-    lab.optimize();
     assert_eq!(lab.used_materials.borrow().get("ORE").unwrap(), &31);
 
     Ok(())
@@ -247,13 +304,8 @@ mod test {
 2 AB, 3 BC, 4 CA => 1 FUEL";
     let lab = Lab::parse(&input)?;
     lab.produce("FUEL", 1);
-    lab.optimize();
-    let produced = lab.get_produced();
-    println!("Produced: {:?}", produced);
-    println!("Shelf: {:?}", lab.shelf.borrow());
-    println!("Consumed: {:?}", lab.used_materials.borrow());
-
     assert_eq!(lab.used_materials.borrow().get("ORE").unwrap(), &165);
+
     Ok(())
   }
 
@@ -270,9 +322,56 @@ mod test {
 3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT";
     let lab = Lab::parse(&input)?;
     lab.produce("FUEL", 1);
-    lab.optimize();
-    // assert_eq!(lab.used_materials.borrow().get("ORE").unwrap(), &13311);
+    assert_eq!(lab.used_materials.borrow().get("ORE").unwrap(), &13312);
 
     Ok(())
   }
+
+  #[test]
+  fn problem1_example4() -> Result<(), ParseError> {
+    let input = "2 VPVL, 7 FWMGM, 2 CXFTF, 11 MNCFX => 1 STKFG
+17 NVRVD, 3 JNWZP => 8 VPVL
+53 STKFG, 6 MNCFX, 46 VJHF, 81 HVMC, 68 CXFTF, 25 GNMV => 1 FUEL
+22 VJHF, 37 MNCFX => 5 FWMGM
+139 ORE => 4 NVRVD
+144 ORE => 7 JNWZP
+5 MNCFX, 7 RFSQX, 2 FWMGM, 2 VPVL, 19 CXFTF => 3 HVMC
+5 VJHF, 7 MNCFX, 9 VPVL, 37 CXFTF => 6 GNMV
+145 ORE => 6 MNCFX
+1 NVRVD => 8 CXFTF
+1 VJHF, 6 MNCFX => 4 RFSQX
+176 ORE => 6 VJHF";
+    let lab = Lab::parse(&input)?;
+    lab.produce("FUEL", 1);
+    assert_eq!(lab.used_materials.borrow().get("ORE").unwrap(), &180697);
+
+    Ok(())
+  }
+
+  #[test]
+  fn problem1_example5() -> Result<(), ParseError> {
+    let input = "171 ORE => 8 CNZTR
+7 ZLQW, 3 BMBT, 9 XCVML, 26 XMNCP, 1 WPTQ, 2 MZWV, 1 RJRHP => 4 PLWSL
+114 ORE => 4 BHXH
+14 VRPVC => 6 BMBT
+6 BHXH, 18 KTJDG, 12 WPTQ, 7 PLWSL, 31 FHTLT, 37 ZDVW => 1 FUEL
+6 WPTQ, 2 BMBT, 8 ZLQW, 18 KTJDG, 1 XMNCP, 6 MZWV, 1 RJRHP => 6 FHTLT
+15 XDBXC, 2 LTCX, 1 VRPVC => 6 ZLQW
+13 WPTQ, 10 LTCX, 3 RJRHP, 14 XMNCP, 2 MZWV, 1 ZLQW => 1 ZDVW
+5 BMBT => 4 WPTQ
+189 ORE => 9 KTJDG
+1 MZWV, 17 XDBXC, 3 XCVML => 2 XMNCP
+12 VRPVC, 27 CNZTR => 2 XDBXC
+15 KTJDG, 12 BHXH => 5 XCVML
+3 BHXH, 2 VRPVC => 7 MZWV
+121 ORE => 7 VRPVC
+7 XCVML => 6 RJRHP
+5 BHXH, 4 VRPVC => 5 LTCX";
+    let lab = Lab::parse(&input)?;
+    lab.produce("FUEL", 1);
+    assert_eq!(lab.used_materials.borrow().get("ORE").unwrap(), &2210736);
+
+    Ok(())
+  }
+
 }

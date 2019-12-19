@@ -1,6 +1,6 @@
 #![feature(vec_remove_item)]
 #![feature(optimize_attribute)]
-#![allow(dead_code)]
+// #![allow(dead_code)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -30,14 +30,11 @@ mod day19;
 mod utils;
 
 fn run() -> Result<(), utils::Error> {
-  // day14::problem1()?;
-  // day14::problem2()?;
+  day14::problem1()?;
+  day14::problem2()?;
 
   // day18::problem1();
   // day18::problem2();
-
-  day19::problem1();
-  day19::problem2();
 
   if false {
     day1::problem1();
