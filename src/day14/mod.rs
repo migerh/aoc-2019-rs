@@ -4,12 +4,12 @@ use super::utils::ParseError;
 
 #[derive(Debug)]
 struct Reagent<'a> {
-  amount: u32,
+  amount: u64,
   what: &'a str,
 }
 
 impl<'a> Reagent<'a> {
-  fn new(amount: u32, what: &'a str) -> Reagent<'a> {
+  fn new(amount: u64, what: &'a str) -> Reagent<'a> {
     Reagent { amount, what }
   }
 
@@ -19,7 +19,7 @@ impl<'a> Reagent<'a> {
     let what_str = data.next();
 
     if let (Some(amount), Some(what)) = (amount_str, what_str) {
-      let amount = amount.parse::<u32>()?;
+      let amount = amount.parse::<u64>()?;
       Ok(Reagent::new(amount, what))
     } else {
       Err(ParseError::new("Could not parse reaction agent"))
@@ -42,8 +42,9 @@ impl<'a> Reaction<'a> {
 #[derive(Debug)]
 struct Lab<'a> {
   reactions: RefCell<Vec<Reaction<'a>>>,
-  shelf: RefCell<HashMap<&'a str, u32>>,
-  used_materials: RefCell<HashMap<&'a str, u32>>,
+  shelf: RefCell<HashMap<&'a str, u64>>,
+  used_materials: RefCell<HashMap<&'a str, u64>>,
+  debug: bool,
 }
 
 impl<'a> Lab<'a> {
@@ -51,8 +52,20 @@ impl<'a> Lab<'a> {
     let shelf = RefCell::new(HashMap::new());
     let used_materials = RefCell::new(HashMap::new());
     let reactions = RefCell::new(reactions);
+    let debug = false;
 
-    Lab { reactions, shelf, used_materials }
+    Lab { reactions, shelf, used_materials, debug }
+  }
+
+  fn clear(&self) {
+    self.shelf.borrow_mut().clear();
+    self.used_materials.borrow_mut().clear();
+  }
+
+  fn log(&self, msg: String) {
+    if self.debug {
+      println!("{}", msg);
+    }
   }
 
   fn parse(input: &str) -> Result<Lab, ParseError> {
@@ -85,7 +98,7 @@ impl<'a> Lab<'a> {
     result
   }
 
-  fn produce(&'a self, what: &'a str, amount: u32) {
+  fn produce(&'a self, what: &'a str, amount: u64) {
     let mut backlog = VecDeque::new();
     backlog.push_back((what, amount));
 
@@ -124,22 +137,22 @@ impl<'a> Lab<'a> {
       let factor = (next_amount - excess + (oa - 1)) / oa;
 
       let excess = oa * factor - (next_amount - excess);
-      println!("Used {} {}", next_amount, next_what);
+      self.log(format!("Used {} {}", next_amount, next_what));
       *self.used_materials.borrow_mut().entry(next_what).or_insert(0) += next_amount;
-      println!("Shelving {} {}", excess, next_what);
+      self.log(format!("Shelving {} {}", excess, next_what));
       *self.shelf.borrow_mut().entry(next_what).or_insert(0) = excess;
 
       for reagent in &reaction.input {
-        println!("Producing {} {}", reagent.amount * factor, reagent.what);
+        self.log(format!("Producing {} {}", reagent.amount * factor, reagent.what));
         backlog.push_back((reagent.what, factor * reagent.amount));
       }
 
-      println!("Backlog: {:?}", backlog);
+      self.log(format!("Backlog: {:?}", backlog));
     }
   }
 }
 
-pub fn problem1() -> Result<u32, ParseError> {
+pub fn problem1() -> Result<u64, ParseError> {
   let input = include_str!("./data/input-1.txt");
   // let input = include_str!("./data/example-4.txt");
   let lab = Lab::parse(&input)?;
@@ -153,8 +166,37 @@ pub fn problem1() -> Result<u32, ParseError> {
   Err(ParseError::new("Could not find ORE"))
 }
 
-pub fn problem2() -> Result<(), ParseError> {
-  Ok(())
+pub fn problem2() -> Result<u64, ParseError> {
+  let input = include_str!("./data/input-1.txt");
+  let lab = Lab::parse(&input)?;
+
+  let ore = 1_000_000_000_000u64;
+  let mut high = 1_000_000_000_000u64;
+  let mut low = 1u64;
+  loop {
+    if high - low <= 1 {
+      break;
+    }
+    let middle = low + (high - low) / 2;
+
+    lab.clear();
+    lab.produce("FUEL", middle);
+
+    if let Some(result) = lab.used_materials.borrow().get("ORE") {
+      println!("Looking at {} we need {} ore", middle, result);
+      if *result < ore {
+        low = middle;
+      } else {
+        high = middle;
+      }
+    } else {
+      return Err(ParseError::new("Could not find ORE"));
+    }
+  }
+
+  let result = low;
+  println!("Result 14-2: {}", result);
+  Ok(result)
 }
 
 #[cfg(test)]
