@@ -12,8 +12,10 @@ opt-level = 3      # controls the `--opt-level` the compiler builds with.
                    # 's' attempts to reduce size, 'z' reduces size even more.
 
 [dependencies]
+aoc-runner = "0.3.0"
+aoc-runner-derive = "0.3.0"
 regex = "1"
 lazy_static = "1.2"
-num = "0.2.0"
-rand = "0.7.2"
-pathfinding = "2.0.1"
+num = "0.4.0"
+rand = "0.8.4"
+pathfinding = "3.0.5"

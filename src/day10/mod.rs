@@ -18,7 +18,6 @@ fn parse_input(input: &str) -> Vec<Coords> {
   asteroids
 }
 
-#[optimize(speed)]
 fn distance(a: Coords, b: Coords) -> f32 {
   let dx = (a.0 - b.0) as f32;
   let dy = (a.1 - b.1) as f32;
@@ -26,7 +25,6 @@ fn distance(a: Coords, b: Coords) -> f32 {
   (dx*dx + dy*dy).sqrt()
 }
 
-#[optimize(speed)]
 fn is_on_line(a: Coords, b: Coords, c: Coords) -> bool {
   let dx1 = (b.0 - a.0) as f32;
   let dy1 = (b.1 - a.1) as f32;
