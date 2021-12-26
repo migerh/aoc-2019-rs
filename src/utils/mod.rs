@@ -14,13 +14,6 @@ pub fn read_file(filename: &str) -> String {
   contents
 }
 
-pub fn preprocess_input(input: &str) -> Vec<&str> {
-  input
-    .split("\n")
-    .filter(|v| *v != "")
-    .collect()
-}
-
 #[derive(Debug)]
 pub struct Error {
   pub what: String
